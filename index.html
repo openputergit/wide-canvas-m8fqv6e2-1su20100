@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #f0f2f5;
+    }
+    .ticket-card {
+        transition: transform 0.2s;
+    }
+    .ticket-card:hover {
+        transform: translateY(-2px);
+    }
+</style>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4">Ticket Management System</h1>
+            <button onclick="createTicket()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="bi bi-plus-lg"></i> Create New Ticket
+            </button>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6" id="ticketContainer">
+            <!-- Tickets will be dynamically added here -->
+        </div>
+    </div>
+
+    <!-- Modal for creating/editing tickets -->
+    <div id="ticketModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 class="text-xl font-bold mb-4" id="modalTitle">Create New Ticket</h2>
+            <form id="ticketForm" onsubmit="handleTicketSubmit(event)">
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Title</label>
+                    <input type="text" id="ticketTitle" class="w-full border rounded-lg px-3 py-2" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Description</label>
+                    <textarea id="ticketDescription" class="w-full border rounded-lg px-3 py-2" rows="3" required></textarea>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Cancel</button>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let tickets = [];
+        const emp1 = { id: 1, name: 'Employee 1' };
+
+        function createTicket() {
+            document.getElementById('ticketModal').classList.remove('hidden');
+            document.getElementById('ticketForm').reset();
+        }
+
+        function closeModal() {
+            document.getElementById('ticketModal').classList.add('hidden');
+        }
+
+        function handleTicketSubmit(event) {
+            event.preventDefault();
+            const title = document.getElementById('ticketTitle').value;
+            const description = document.getElementById('ticketDescription').value;
+            
+            const newTicket = {
+                id: Date.now(),
+                title,
+                description,
+                assignedTo: emp1,
+                status: 'Open',
+                comments: [],
+                created: new Date().toLocaleString()
+            };
+
+            tickets.push(newTicket);
+            renderTickets();
+            closeModal();
+        }
+
+        function addComment(ticketId) {
+            const comment = prompt('Enter your comment:');
+            if (comment) {
+                const ticket = tickets.find(t => t.id === ticketId);
+                if (ticket) {
+                    ticket.comments.push({
+                        text: comment,
+                        timestamp: new Date().toLocaleString(),
+                        user: emp1.name
+                    });
+                    renderTickets();
+                }
+            }
+        }
+
+        function markComplete(ticketId) {
+            const ticket = tickets.find(t => t.id === ticketId);
+            if (ticket) {
+                ticket.status = ticket.status === 'Open' ? 'Completed' : 'Open';
+                renderTickets();
+            }
+        }
+
+        function renderTickets() {
+            const container = document.getElementById('ticketContainer');
+            container.innerHTML = tickets.map(ticket => `
+                <div class="ticket-card bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="text-xl font-semibold text-gray-800">${ticket.title}</h3>
+                        <span class="px-3 py-1 rounded-full text-sm ${ticket.status === 'Open' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
+                            ${ticket.status}
+                        </span>
+                    </div>
+                    <p class="text-gray-600 mb-4">${ticket.description}</p>
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-500">Assigned to: ${ticket.assignedTo.name}</p>
+                        <p class="text-sm text-gray-500">Created: ${ticket.created}</p>
+                    </div>
+                    <div class="space-y-2">
+                        ${ticket.comments.map(comment => `
+                            <div class="bg-gray-50 p-3 rounded">
+                                <p class="text-sm">${comment.text}</p>
+                                <p class="text-xs text-gray-500">By ${comment.user} at ${comment.timestamp}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="flex gap-2 mt-4">
+                        <button onclick="addComment(${ticket.id})" class="text-blue-600 hover:text-blue-700">
+                            <i class="bi bi-chat-dots"></i> Add Comment
+                        </button>
+                        <button onclick="markComplete(${ticket.id})" class="text-green-600 hover:text-green-700">
+                            <i class="bi bi-check-circle"></i> ${ticket.status === 'Open' ? 'Mark Complete' : 'Reopen'}
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Initial render
+        renderTickets();
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
